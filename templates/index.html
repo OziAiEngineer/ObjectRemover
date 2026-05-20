@@ -1,0 +1,1756 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Object Remover Dashboard</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource-variable/inter@5.2.5/wght.min.css"/>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #22263a;
+    --border: #2e3250;
+    --accent: #6c63ff;
+    --accent2: #a78bfa;
+    --success: #22c55e;
+    --danger: #ef4444;
+    --warning: #f59e0b;
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --radius: 12px;
+  }
+  html { color-scheme: dark; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: "Inter Variable", Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif;
+    background: var(--bg); color: var(--text); display: flex; min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* ── Sidebar ── */
+  #sidebar {
+    width: 240px; min-height: 100vh; background: var(--surface);
+    border-right: 1px solid var(--border); display: flex; flex-direction: column;
+    position: fixed; top: 0; left: 0; z-index: 100;
+  }
+  .sidebar-logo {
+    padding: 24px 20px 16px; border-bottom: 1px solid var(--border);
+  }
+  .sidebar-logo h1 {
+    font-size: 1.1rem; font-weight: 700; color: var(--accent2);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .sidebar-logo-mark { width: 1.25rem; height: 1.25rem; flex-shrink: 0; color: var(--accent2); }
+  .sidebar-logo p { font-size: 0.72rem; color: var(--muted); margin-top: 2px; }
+  .nav-section { padding: 16px 12px 4px; font-size: 0.65rem; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px; padding: 10px 16px;
+    margin: 2px 8px; border-radius: 8px; cursor: pointer; font-size: 0.88rem;
+    color: var(--muted); transition: all .15s;
+  }
+  .nav-item:hover { background: var(--surface2); color: var(--text); }
+  .nav-item.active { background: var(--accent); color: #fff; }
+  .nav-item svg { width: 16px; height: 16px; flex-shrink: 0; }
+  .sidebar-footer {
+    margin-top: auto; padding: 16px; border-top: 1px solid var(--border);
+    font-size: 0.75rem; color: var(--muted);
+  }
+  #admin-badge {
+    display: none; background: var(--accent); color: #fff;
+    font-size: 0.65rem; padding: 2px 8px; border-radius: 20px; margin-top: 6px;
+  }
+
+  /* ── Main ── */
+  #main { margin-left: 240px; flex: 1; padding: 32px; max-width: 1400px; }
+  .page { display: none; }
+  .page.active { display: block; }
+  .page-header { margin-bottom: 28px; }
+  .page-header h2 { font-size: 1.5rem; font-weight: 700; }
+  .page-header p { color: var(--muted); margin-top: 4px; font-size: 0.88rem; }
+
+  /* ── Cards ── */
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 24px; margin-bottom: 20px;
+  }
+  .card-title { font-size: 0.95rem; font-weight: 600; margin-bottom: 16px; color: var(--accent2); }
+
+  /* ── Form elements ── */
+  label { display: block; font-size: 0.8rem; color: var(--muted); margin-bottom: 6px; }
+  input[type=text], input[type=password], input[type=file], select {
+    width: 100%; padding: 10px 14px; background: var(--surface2);
+    border: 1px solid var(--border); border-radius: 8px; color: var(--text);
+    font-size: 0.88rem; outline: none; transition: border .15s;
+  }
+  input:focus, select:focus { border-color: var(--accent); }
+  .form-row { margin-bottom: 14px; }
+  .form-row-inline { display: flex; gap: 12px; }
+  .form-row-inline .form-row { flex: 1; }
+
+  /* ── Buttons ── */
+  .btn {
+    padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer;
+    font-size: 0.88rem; font-weight: 600; transition: all .15s; display: inline-flex;
+    align-items: center; gap: 6px;
+  }
+  .btn svg { width: 0.95em; height: 0.95em; flex-shrink: 0; }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { background: #5a52e0; }
+  .btn-danger { background: var(--danger); color: #fff; }
+  .btn-danger:hover { background: #dc2626; }
+  .btn-success { background: var(--success); color: #fff; }
+  .btn-success:hover { background: #16a34a; }
+  .btn-ghost { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+  .btn-ghost:hover { border-color: var(--accent); color: var(--accent2); }
+  .btn:disabled { opacity: .5; cursor: not-allowed; }
+
+  /* ── Tab Buttons for Mode Toggle ── */
+  .tab-btn {
+    padding: 6px 14px; border: none; background: transparent; border-radius: 6px;
+    font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: all 0.15s;
+    color: var(--muted);
+  }
+  .tab-btn:hover { color: var(--text); }
+  .tab-btn.active { background: var(--accent) !important; color: #fff !important; }
+
+  /* ── Alert / Toast ── */
+  .alert {
+    padding: 12px 16px; border-radius: 8px; font-size: 0.85rem;
+    margin-top: 12px; display: none;
+  }
+  .alert.show { display: block; }
+  .alert-success { background: #14532d44; border: 1px solid var(--success); color: #86efac; }
+  .alert-error   { background: #7f1d1d44; border: 1px solid var(--danger);  color: #fca5a5; }
+  .alert-info    { background: #1e1b4b44; border: 1px solid var(--accent);  color: var(--accent2); }
+
+  /* ── Table ── */
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.83rem; }
+  th { text-align: left; padding: 10px 14px; color: var(--muted); font-weight: 600; border-bottom: 1px solid var(--border); }
+  td { padding: 10px 14px; border-bottom: 1px solid var(--border); }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: var(--surface2); }
+  tr.row-clickable { cursor: pointer; }
+  .badge {
+    display: inline-block; padding: 2px 10px; border-radius: 20px; font-size: 0.72rem; font-weight: 600;
+  }
+  .badge-green { background: #14532d55; color: #86efac; }
+  .badge-red   { background: #7f1d1d55; color: #fca5a5; }
+  .badge-blue  { background: #1e1b4b55; color: var(--accent2); }
+
+  /* ── Stats grid ── */
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 20px; }
+  .stat-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 20px;
+  }
+  .stat-label { font-size: 0.75rem; color: var(--muted); margin-bottom: 6px; }
+  .stat-value { font-size: 1.6rem; font-weight: 700; color: var(--accent2); }
+  .stat-sub   { font-size: 0.72rem; color: var(--muted); margin-top: 2px; }
+
+  /* ── Drop Zone ── */
+  .drop-zone {
+    border: 2px dashed var(--border); border-radius: var(--radius);
+    padding: 40px; text-align: center; cursor: pointer; transition: all .2s;
+    background: var(--surface2);
+  }
+  .drop-zone:hover, .drop-zone.drag-over { border-color: var(--accent); background: #1e1b4b33; }
+  .drop-zone svg { width: 40px; height: 40px; color: var(--muted); margin-bottom: 10px; }
+  .drop-zone p { color: var(--muted); font-size: 0.88rem; }
+  .drop-zone strong { color: var(--accent2); }
+  #file-input { display: none; }
+  .preview-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
+  .preview-box { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .preview-box img { width: 100%; display: block; max-height: 480px; object-fit: contain; background: repeating-conic-gradient(#2a2a3a 0% 25%, #1a1a2a 0% 50%) 0 0 / 20px 20px; }
+  .preview-label { padding: 8px 12px; font-size: 0.75rem; color: var(--muted); border-top: 1px solid var(--border); }
+
+  /* ── Admin gate ── */
+  #admin-gate {
+    display: flex; align-items: center; justify-content: center;
+    min-height: 60vh;
+  }
+  .gate-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 40px; width: 100%; max-width: 420px; text-align: center;
+  }
+  .gate-card svg { width: 48px; height: 48px; color: var(--accent); margin-bottom: 16px; }
+  .gate-card h3 { font-size: 1.1rem; margin-bottom: 8px; }
+  .gate-card p { color: var(--muted); font-size: 0.85rem; margin-bottom: 20px; }
+
+  /* ── Spinner ── */
+  .spinner {
+    width: 18px; height: 18px; border: 2px solid #ffffff44;
+    border-top-color: #fff; border-radius: 50%; animation: spin .6s linear infinite; display: none;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── Filters bar ── */
+  .filters { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; align-items: flex-end; }
+  .filters .form-row { margin-bottom: 0; min-width: 140px; }
+  .filters input, .filters select { padding: 8px 12px; }
+
+  /* ── Date picker dark theme ── */
+  input[type=date] {
+    width: 100%; padding: 10px 14px; background: var(--surface2);
+    border: 1px solid var(--border); border-radius: 8px; color: var(--text);
+    font-size: 0.88rem; outline: none; transition: border .15s;
+    color-scheme: dark;
+  }
+  input[type=date]:focus { border-color: var(--accent); }
+
+  /* ── Copy button ── */
+  .copy-btn {
+    background: none; border: none; cursor: pointer; color: var(--muted);
+    padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; transition: color .15s;
+    display: inline-flex; align-items: center; gap: 4px;
+  }
+  .copy-btn:hover { color: var(--accent2); }
+  .copy-btn svg { width: 0.95em; height: 0.95em; flex-shrink: 0; }
+
+  /* ── Responsive ── */
+  @media (max-width: 768px) {
+    #sidebar { width: 60px; }
+    .sidebar-logo, .nav-section, .nav-item span, .sidebar-footer { display: none; }
+    #main { margin-left: 60px; padding: 16px; }
+    .preview-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════ SIDEBAR ═══════════════════════════ -->
+<nav id="sidebar">
+  <div class="sidebar-logo">
+    <h1>
+      <svg class="sidebar-logo-mark" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" viewBox="0 0 24 24" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 21l8.982-11.861a.9.9 0 00-.734-1.442H13.5l1.687-5.904L6 12.5h4.5v3.404z" />
+      </svg>
+      <span>Object Remover</span>
+    </h1>
+    <p>API Dashboard</p>
+    <div id="admin-badge">Admin</div>
+  </div>
+
+  <div class="nav-section">Tools</div>
+  <div class="nav-item active" data-nav="object-remover" onclick="navigate('object-remover')">
+    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+    </svg>
+    <span>Object Remover</span>
+  </div>
+
+  <div class="nav-section">Admin</div>
+  <div class="nav-item" data-nav="authorization" onclick="navigate('authorization')">
+    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+    <span>Authorization</span>
+  </div>
+  <div class="nav-item" data-nav="analytics" onclick="navigate('analytics')">
+    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M18 9l-5 5-4-4-3 3"/></svg>
+    <span>Analytics</span>
+  </div>
+
+  <div class="sidebar-footer">
+    <div id="admin-status-text">Not authenticated</div>
+    <button class="btn btn-ghost" style="margin-top:8px;width:100%;font-size:0.75rem;" onclick="navigate('admin-login')">
+      <svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" aria-hidden="true"><path d="M15.75 5.25a3 3 0 013 3m3 0a6 6 0 01-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1121.75 8.25z"/></svg>
+      Admin Login
+    </button>
+  </div>
+</nav>
+
+<!-- ═══════════════════════════ MAIN ═══════════════════════════ -->
+<main id="main">
+
+  <!-- ── OBJECT REMOVER PAGE ── -->
+  <div id="page-object-remover" class="page active">
+    <div class="page-header">
+      <h2>Object Remover</h2>
+      <p>Interactive image segmentation and AI-powered inpainting. Remove any object seamlessly.</p>
+    </div>
+
+    <!-- API Key Input -->
+    <div class="card">
+      <div class="card-title">API Credentials</div>
+      <div class="form-row">
+        <label>X-API-Key — required to process images</label>
+        <input type="password" id="object-api-key" placeholder="Paste your API key here…" oninput="saveApiKey()"/>
+      </div>
+    </div>
+
+    <!-- Core Workspace Grid -->
+    <div style="display:grid; grid-template-columns: 1fr 360px; gap: 20px; align-items: start;">
+      
+      <!-- Left side: Interactive Canvas & Results -->
+      <div style="display:flex; flex-direction:column; gap:20px;">
+        <div class="card" style="text-align: center;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:12px;">
+            <div class="card-title" style="text-align: left; margin-bottom: 0;">Workspace</div>
+            
+            <!-- Mode Selector Tabs -->
+            <div id="mode-tabs" style="display:none; background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:2px;">
+              <button class="tab-btn active" onclick="setEditorMode('sam')">
+                One-Click (SAM)
+              </button>
+              <button class="tab-btn" onclick="setEditorMode('brush')">
+                Brush Drawing
+              </button>
+            </div>
+          </div>
+          
+          <!-- Drop Zone (visible before upload) -->
+          <div class="drop-zone" id="drop-zone" onclick="document.getElementById('file-input').click()">
+            <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/></svg>
+            <p><strong>Click to upload</strong> or drag & drop</p>
+            <p style="margin-top:4px;font-size:0.75rem;">PNG, JPG, WEBP supported</p>
+          </div>
+          <input type="file" id="file-input" accept="image/*"/>
+
+          <!-- Interactive Editor (visible after upload) -->
+          <div id="editor-container" style="display:none; position:relative; margin-top:16px;">
+            <div style="background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:16px; display:inline-block; max-width:100%; position:relative; overflow:auto;">
+              <canvas id="object-canvas" style="cursor: crosshair; display: block; max-width:100%; height:auto; margin:0 auto; box-shadow: 0 4px 20px rgba(0,0,0,0.5);"></canvas>
+            </div>
+            
+            <div style="margin-top:12px; display:flex; justify-content:center; gap:10px; align-items:center; flex-wrap:wrap;">
+              <!-- SAM Mode Buttons -->
+              <span id="sam-buttons" style="display:inline-flex; gap:10px;align-items:center;">
+                <button class="btn btn-ghost" onclick="clearSamMask()">
+                  <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"/></svg>
+                  Clear Mask
+                </button>
+                <div id="sam-hint" style="font-size:0.8rem; color:var(--muted); display:inline-flex; align-items:center; gap:6px;">
+                  <div class="spinner" id="sam-spinner"></div>
+                  <span id="sam-hint-text">Click on an object to auto-detect it</span>
+                </div>
+              </span>
+              
+              <!-- Brush Mode Buttons -->
+              <span id="brush-buttons" style="display:none; gap:10px; align-items:center; flex-wrap:wrap;">
+                <button class="btn btn-ghost" onclick="clearBrush()">
+                  <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"/></svg>
+                  Clear Brush
+                </button>
+                
+                <!-- Brush Size Control -->
+                <div style="display:inline-flex; align-items:center; gap:8px; background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:6px 12px; height:42px;">
+                  <span style="font-size:0.8rem; color:var(--muted); white-space:nowrap;">Brush Size:</span>
+                  <input type="range" id="brush-size-input" min="5" max="100" value="30" style="width:100px; accent-color:var(--accent);" oninput="updateBrushSize(this.value)"/>
+                  <strong id="brush-size-val" style="color:var(--accent2); font-size:0.8rem; min-width:32px; text-align:right;">30px</strong>
+                </div>
+              </span>
+
+              <!-- Common Buttons -->
+              <button class="btn btn-success" id="inpaint-btn" onclick="removeObject()" disabled>
+                <div class="spinner" id="inpaint-spinner"></div>
+                Remove Object
+              </button>
+              <button class="btn btn-ghost" onclick="resetEditor()">Reset Workspace</button>
+            </div>
+          </div>
+
+          <div class="alert" id="editor-alert"></div>
+        </div>
+
+        <!-- Result Display -->
+        <div class="card" id="result-card" style="display:none;">
+          <div class="card-title" style="display:flex; justify-content:space-between; align-items:center;">
+            <span>Removal Result</span>
+            <a id="download-btn" class="btn btn-success" style="font-size:0.8rem; padding:6px 14px;" download>
+              <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/></svg>
+              Download Result
+            </a>
+          </div>
+          
+          <div class="preview-grid">
+            <div class="preview-box">
+              <img id="result-before" src="" alt="Before"/>
+              <div class="preview-label">Original Image</div>
+            </div>
+            <div class="preview-box">
+              <img id="result-after" src="" alt="After"/>
+              <div class="preview-label">Object Removed</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Right side: Advanced Settings Panel -->
+      <div class="card">
+        <div class="card-title">Settings</div>
+        
+        <div class="form-row">
+          <label style="display:flex; justify-content:space-between;">
+            <span>Mask Expansion</span>
+            <strong id="val-mask-expand" style="color:var(--accent2)">10px</strong>
+          </label>
+          <input type="range" id="param-mask-expand" min="0" max="50" value="10" step="1" style="width:100%; accent-color:var(--accent);" oninput="updateParamVal('mask-expand', this.value + 'px')"/>
+          <p style="font-size:0.7rem; color:var(--muted); margin-top:4px;">Dilates/grows the segment mask to avoid blurry borders.</p>
+        </div>
+
+        <div class="form-row" style="margin-top:20px;">
+          <label style="display:flex; justify-content:space-between;">
+            <span>LDM Steps</span>
+            <strong id="val-ldm-steps" style="color:var(--accent2)">25</strong>
+          </label>
+          <input type="range" id="param-ldm-steps" min="5" max="100" value="25" step="1" style="width:100%; accent-color:var(--accent);" oninput="updateParamVal('ldm-steps', this.value)"/>
+          <p style="font-size:0.7rem; color:var(--muted); margin-top:4px;">Number of denoising steps for the inpainter.</p>
+        </div>
+
+        <div class="form-row" style="margin-top:20px;">
+          <label>Inpainting Strategy</label>
+          <select id="param-hd-strategy">
+            <option value="Original">Original Resolution</option>
+            <option value="Crop">Smart Crop</option>
+            <option value="Resize">Resize Image</option>
+          </select>
+          <p style="font-size:0.7rem; color:var(--muted); margin-top:4px;">Determines how HD images are scaled down or crop-chunked before model execution.</p>
+        </div>
+
+        <!-- How it works guide -->
+        <div style="margin-top:28px; padding-top:20px; border-top:1px solid var(--border); font-size:0.78rem; line-height:1.5; color:var(--muted);">
+          <div style="font-weight:600; color:var(--text); margin-bottom:8px; display:flex; align-items:center; gap:6px;">
+            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width:14px; height:14px; color:var(--accent2);"><path d="M9.813 15.904L9 21l8.982-11.861a.9.9 0 00-.734-1.442H13.5l1.687-5.904L6 12.5h4.5v3.404z"/></svg>
+            How it works:
+          </div>
+          <div style="font-weight:600; color:var(--text); margin-bottom:4px; margin-top:10px;">🎯 One-Click (SAM) Mode</div>
+          <ol style="padding-left:16px; display:flex; flex-direction:column; gap:4px; margin-bottom:12px;">
+            <li>Upload an image and select <strong>One-Click (SAM)</strong> mode.</li>
+            <li><strong>Click once</strong> on the object you want to remove — SAM auto-detects it instantly.</li>
+            <li>A mask overlay appears. Click again anywhere to re-detect a different object.</li>
+            <li>Press <strong>Remove Object</strong> to run LaMa inpainting.</li>
+          </ol>
+          <div style="font-weight:600; color:var(--text); margin-bottom:4px;">🖌️ Brush Drawing Mode</div>
+          <ol style="padding-left:16px; display:flex; flex-direction:column; gap:4px;">
+            <li>Upload an image and select <strong>Brush Drawing</strong> mode.</li>
+            <li>Paint over the areas you want to erase with your cursor or finger.</li>
+            <li>Adjust brush size and press <strong>Remove Object</strong> to run LaMa inpainting.</li>
+          </ol>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── ADMIN LOGIN PAGE ── -->
+  <div id="page-admin-login" class="page">
+    <div id="admin-gate">
+      <div class="gate-card">
+        <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"/></svg>
+        <h3>Admin Authentication</h3>
+        <p>Enter your Admin Key to access Authorization and Analytics pages.</p>
+        <div class="form-row" style="text-align:left;">
+          <label>Admin Key (X-Admin-Key)</label>
+          <input type="password" id="admin-key-input" placeholder="Enter admin key…" onkeydown="if(event.key==='Enter') verifyAdmin()"/>
+        </div>
+        <div class="alert" id="login-alert"></div>
+        <button class="btn btn-primary" style="width:100%;margin-top:12px;" onclick="verifyAdmin()">
+          <div class="spinner" id="login-spinner"></div>
+          Authenticate
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── AUTHORIZATION PAGE ── -->
+  <div id="page-authorization" class="page">
+    <div class="page-header">
+      <h2>Authorization</h2>
+      <p>Manage API keys for all applications.</p>
+    </div>
+
+    <!-- Generate Key -->
+    <div class="card">
+      <div class="card-title">Generate New API Key</div>
+      <div class="form-row-inline">
+        <div class="form-row">
+          <label>App Name</label>
+          <input type="text" id="gen-app-name" placeholder="e.g. MyMobileApp"/>
+        </div>
+        <div class="form-row">
+          <label>Custom Secret Key <span style="color:var(--muted)">(optional)</span></label>
+          <input type="text" id="gen-secret-key" placeholder="Leave blank to auto-generate"/>
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="generateKey()">
+        <div class="spinner" id="gen-spinner"></div>
+        Generate Key
+      </button>
+      <div class="alert" id="gen-alert"></div>
+      <div id="gen-result" style="display:none;margin-top:16px;">
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px;">
+          <div style="font-size:0.75rem;color:var(--muted);margin-bottom:6px;">Generated API Key — copy and store it now</div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <code id="gen-key-value" style="font-size:0.85rem;color:var(--accent2);word-break:break-all;flex:1;"></code>
+            <button class="copy-btn" onclick="copyText('gen-key-value')">
+              <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+              Copy
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Revoke / Restore -->
+    <div class="card">
+      <div class="card-title">Revoke / Restore Key</div>
+      <div class="form-row">
+        <label>API Key</label>
+        <input type="text" id="manage-key-input" placeholder="Paste full API key…"/>
+      </div>
+      <div style="display:flex;gap:10px;">
+        <button class="btn btn-danger" onclick="revokeKey()">
+          <div class="spinner" id="revoke-spinner"></div>
+          Revoke
+        </button>
+        <button class="btn btn-success" onclick="restoreKey()">
+          <div class="spinner" id="restore-spinner"></div>
+          Restore
+        </button>
+      </div>
+      <div class="alert" id="manage-alert"></div>
+    </div>
+
+    <!-- List Keys -->
+    <div class="card">
+      <div class="card-title" style="display:flex;justify-content:space-between;align-items:center;">
+        All API Keys
+        <button class="btn btn-ghost" style="font-size:0.78rem;padding:6px 14px;" onclick="loadKeys()">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 16h5v5"/></svg>
+          Refresh
+        </button>
+      </div>
+      <div class="table-wrap">
+        <table id="keys-table">
+          <thead>
+            <tr>
+              <th>App Name</th>
+              <th>API Key (masked)</th>
+              <th>Status</th>
+              <th>Created At</th>
+            </tr>
+          </thead>
+          <tbody id="keys-tbody">
+            <tr><td colspan="4" style="color:var(--muted);text-align:center;padding:24px;">Click Refresh to load keys</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="alert" id="keys-alert"></div>
+    </div>
+  </div>
+
+  <!-- ── ANALYTICS PAGE ── -->
+  <div id="page-analytics" class="page">
+    <div class="page-header">
+      <h2>Analytics</h2>
+      <p>Monitor API usage, bandwidth, and per-app statistics.</p>
+    </div>
+
+    <!-- Summary Stats -->
+    <div class="stats-grid" id="stats-grid">
+      <div class="stat-card"><div class="stat-label">Total Requests</div><div class="stat-value" id="stat-total">—</div></div>
+      <div class="stat-card"><div class="stat-label">Total Bandwidth</div><div class="stat-value" id="stat-bw">—</div></div>
+      <div class="stat-card"><div class="stat-label">Avg Response Time</div><div class="stat-value" id="stat-rt">—</div></div>
+      <div class="stat-card"><div class="stat-label">Unique IPs</div><div class="stat-value" id="stat-ips">—</div></div>
+    </div>
+
+    <!-- Two-column layout: left = filters+table, right = charts -->
+    <div style="display:grid;grid-template-columns:1fr 340px;gap:16px;align-items:start;">
+
+      <!-- LEFT COLUMN -->
+      <div>
+        <!-- Filters -->
+        <div class="card">
+          <div class="card-title" style="display:flex;justify-content:space-between;align-items:center;">
+            Filters
+            <button class="btn btn-ghost" style="font-size:0.78rem;padding:6px 14px;" onclick="resetFilters()">
+              <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg>
+              Reset
+            </button>
+          </div>
+          <div class="filters">
+            <div class="form-row">
+              <label>App Name</label>
+              <input type="text" id="f-app" placeholder="All apps" list="list-apps" autocomplete="off"/>
+              <datalist id="list-apps"></datalist>
+            </div>
+            <div class="form-row">
+              <label>Method</label>
+              <select id="f-method">
+                <option value="">All</option>
+                <option>GET</option><option>POST</option><option>PUT</option><option>DELETE</option><option>PATCH</option>
+              </select>
+            </div>
+            <div class="form-row">
+              <label>Status Code</label>
+              <input type="text" id="f-status" placeholder="All" list="list-status" autocomplete="off"/>
+              <datalist id="list-status"></datalist>
+            </div>
+            <div class="form-row">
+              <label>Start Date</label>
+              <input type="date" id="f-start"/>
+            </div>
+            <div class="form-row">
+              <label>End Date</label>
+              <input type="date" id="f-end"/>
+            </div>
+            <div class="form-row">
+              <label>&nbsp;</label>
+              <button class="btn btn-primary" onclick="currentPage=0;loadAnalytics();loadCharts();">
+                <div class="spinner" id="analytics-spinner"></div>
+                Apply
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Records Table -->
+        <div class="card">
+          <div class="card-title" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+            <span>Request Logs</span>
+            <span style="display:flex;align-items:center;gap:10px;">
+              <button type="button" class="btn btn-ghost" style="font-size:0.78rem;padding:6px 14px;" onclick="refreshAnalyticsList()" title="Reload filters metadata, summary, log table, and charts">
+                <div class="spinner" id="analytics-refresh-spinner"></div>
+                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 16h5v5"/></svg>
+                Refresh
+              </button>
+              <span id="analytics-total-badge" class="badge badge-blue"></span>
+            </span>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Timestamp</th>
+                  <th>App</th>
+                  <th>Method</th>
+                  <th>Path</th>
+                  <th>Status</th>
+                  <th>RT</th>
+                  <th>BW</th>
+                </tr>
+              </thead>
+              <tbody id="analytics-tbody">
+                <tr><td colspan="7" style="color:var(--muted);text-align:center;padding:24px;">Apply filters to load records</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div style="display:flex;gap:10px;margin-top:14px;align-items:center;">
+            <button class="btn btn-ghost" id="prev-btn" onclick="changePage(-1)" disabled>
+              <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
+              Prev
+            </button>
+            <span id="page-info" style="font-size:0.82rem;color:var(--muted);">Page 1</span>
+            <button class="btn btn-ghost" id="next-btn" onclick="changePage(1)">
+              Next
+              <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>
+            </button>
+          </div>
+          <div id="analytics-error-detail" class="alert alert-info" style="margin-top:12px;display:none;"></div>
+          <div class="alert" id="analytics-alert"></div>
+        </div>
+
+        <!-- Cleanup -->
+        <div class="card">
+          <div class="card-title">Cleanup Old Records</div>
+          <div style="display:flex;gap:12px;align-items:flex-end;">
+            <div class="form-row" style="margin-bottom:0;">
+              <label>Delete records older than (days)</label>
+              <input type="text" id="cleanup-days" value="90" style="width:120px;"/>
+            </div>
+            <button class="btn btn-danger" onclick="cleanupAnalytics()">
+              <div class="spinner" id="cleanup-spinner"></div>
+              Delete Old Records
+            </button>
+          </div>
+          <div class="alert" id="cleanup-alert"></div>
+        </div>
+
+        <!-- Delete by Filter -->
+        <div class="card">
+          <div class="card-title">Delete Records by Filter</div>
+          <p style="font-size:0.82rem;color:var(--muted);margin-bottom:14px;">
+            Delete recent records matching specific criteria (e.g., bot traffic, test requests, specific status codes).
+          </p>
+          <div class="filters">
+            <div class="form-row">
+              <label>App Name</label>
+              <input type="text" id="del-app" placeholder="Optional" list="list-apps"/>
+            </div>
+            <div class="form-row">
+              <label>Method</label>
+              <select id="del-method">
+                <option value="">All</option>
+                <option>GET</option><option>POST</option><option>PUT</option><option>DELETE</option><option>PATCH</option><option>PRI</option>
+              </select>
+            </div>
+            <div class="form-row">
+              <label>Status Code</label>
+              <input type="text" id="del-status" placeholder="e.g., 404" list="list-status"/>
+            </div>
+            <div class="form-row">
+              <label>Path Pattern</label>
+              <input type="text" id="del-path" placeholder="e.g., /metrics"/>
+            </div>
+            <div class="form-row">
+              <label>Start Date</label>
+              <input type="date" id="del-start"/>
+            </div>
+            <div class="form-row">
+              <label>End Date</label>
+              <input type="date" id="del-end"/>
+            </div>
+          </div>
+          <div style="margin-top:12px;">
+            <button class="btn btn-danger" onclick="deleteByFilter()">
+              <div class="spinner" id="delete-filter-spinner"></div>
+              Delete Matching Records
+            </button>
+          </div>
+          <div class="alert" id="delete-filter-alert"></div>
+        </div>
+
+        <!-- Delete All -->
+        <div class="card">
+          <div class="card-title" style="color:var(--danger);">⚠️ Delete All Records</div>
+          <p style="font-size:0.82rem;color:var(--muted);margin-bottom:14px;">
+            <strong>Warning:</strong> This will permanently delete ALL analytics records. This action cannot be undone.
+          </p>
+          <div style="display:flex;gap:12px;align-items:flex-end;">
+            <div class="form-row" style="margin-bottom:0;">
+              <label>Type "DELETE_ALL" to confirm</label>
+              <input type="text" id="delete-all-confirm" placeholder="DELETE_ALL" style="width:200px;"/>
+            </div>
+            <button class="btn btn-danger" onclick="deleteAllAnalytics()">
+              <div class="spinner" id="delete-all-spinner"></div>
+              Delete All Records
+            </button>
+          </div>
+          <div class="alert" id="delete-all-alert"></div>
+        </div>
+      </div>
+
+      <!-- RIGHT COLUMN: Charts stacked vertically -->
+      <div style="display:flex;flex-direction:column;gap:16px;">
+        <div class="card">
+          <div class="card-title">Requests / Day</div>
+          <div style="position:relative;width:100%;height:220px;">
+            <canvas id="chart-requests"></canvas>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">Bandwidth / Day (KB)</div>
+          <div style="position:relative;width:100%;height:220px;">
+            <canvas id="chart-bandwidth"></canvas>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- end two-column -->
+  </div>
+
+</main>
+
+<script>
+// ═══════════════════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════════════════
+let adminKey = '';   // kept only in memory — never written to sessionStorage
+let currentPage = 0;
+const PAGE_LIMIT = 10;
+let currentAnalyticsRecords = [];
+let chartRequests = null;
+let chartBandwidth = null;
+
+// Object Remover canvas state
+let objectCanvas = null;
+let objectCtx = null;
+let originalImage = null;
+let generatedMaskB64 = null;
+let originalImageFile = null;
+
+// Manual Brush Painting State
+let editorMode = 'sam'; // 'sam' or 'brush'
+let isDrawing = false;
+let brushSize = 30;
+let brushMaskCanvas = null;
+let brushMaskCtx = null;
+let cursorX = -100;
+let cursorY = -100;
+let samBusy = false; // prevents overlapping SAM clicks
+
+// ═══════════════════════════════════════════════════════
+//  NAVIGATION
+// ═══════════════════════════════════════════════════════
+const ADMIN_PAGES = ['authorization', 'analytics'];
+
+function navigate(page) {
+  if (ADMIN_PAGES.includes(page) && !adminKey) {
+    showAdminGate(page);
+    return;
+  }
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const el = document.getElementById('page-' + page);
+  if (el) el.classList.add('active');
+  document.querySelectorAll('.nav-item[data-nav]').forEach(n => {
+    if (n.dataset.nav === page) n.classList.add('active');
+  });
+  
+  if (page === 'object-remover') {
+    loadApiKey();
+  }
+  if (page === 'authorization') loadKeys();
+  if (page === 'analytics') { loadFiltersMeta(); loadSummary(); loadAnalytics(); loadCharts(); }
+}
+
+function showAdminGate(targetPage) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-admin-login').classList.add('active');
+  document.getElementById('admin-key-input').dataset.target = targetPage;
+}
+
+// ═══════════════════════════════════════════════════════
+//  ADMIN AUTH
+// ═══════════════════════════════════════════════════════
+async function verifyAdmin() {
+  const key = document.getElementById('admin-key-input').value.trim();
+  const target = document.getElementById('admin-key-input').dataset.target || 'authorization';
+  if (!key) { showAlert('login-alert', 'error', 'Please enter your admin key.'); return; }
+
+  setSpinner('login-spinner', true);
+  try {
+    const res = await fetch('/api/auth/keys', { headers: { 'X-Admin-Key': key } });
+    if (res.ok) {
+      adminKey = key;
+      document.getElementById('admin-badge').style.display = 'inline-block';
+      document.getElementById('admin-status-text').textContent = 'Admin authenticated';
+      hideAlert('login-alert');
+      navigate(target);
+    } else {
+      showAlert('login-alert', 'error', 'Invalid admin key. Access denied.');
+    }
+  } catch(e) {
+    showAlert('login-alert', 'error', 'Connection error: ' + e.message);
+  }
+  setSpinner('login-spinner', false);
+}
+
+// ═══════════════════════════════════════════════════════
+//  OBJECT REMOVER LOGIC
+// ═══════════════════════════════════════════════════════
+function initCanvasReferences() {
+  objectCanvas = document.getElementById('object-canvas');
+  if (objectCanvas) {
+    objectCtx = objectCanvas.getContext('2d');
+    
+    // Mouse events
+    objectCanvas.addEventListener('mousedown', handleMouseDown);
+    objectCanvas.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+    
+    // Touch events for responsive touch support
+    objectCanvas.addEventListener('touchstart', handleTouchStart, { passive: false });
+    objectCanvas.addEventListener('touchmove', handleTouchMove, { passive: false });
+    objectCanvas.addEventListener('touchend', handleTouchEnd);
+    
+    // Reset brush cursor when leaving the canvas bounds
+    objectCanvas.addEventListener('mouseleave', () => {
+      cursorX = -100;
+      cursorY = -100;
+      redrawCanvas();
+    });
+  }
+}
+
+// Convert screen mouse/touch pointer to native canvas space coordinates
+function getCanvasCoords(e) {
+  const rect = objectCanvas.getBoundingClientRect();
+  let clientX = 0;
+  let clientY = 0;
+  
+  if (e.touches && e.touches.length > 0) {
+    clientX = e.touches[0].clientX;
+    clientY = e.touches[0].clientY;
+  } else {
+    clientX = e.clientX;
+    clientY = e.clientY;
+  }
+  
+  const canvasX = (clientX - rect.left) * (objectCanvas.width / rect.width);
+  const canvasY = (clientY - rect.top) * (objectCanvas.height / rect.height);
+  
+  return { canvasX, canvasY };
+}
+
+function setFile(f) {
+  originalImageFile = f;
+  const reader = new FileReader();
+  reader.onload = e => {
+    originalImage = new Image();
+    originalImage.onload = function() {
+      objectCanvas.width = originalImage.naturalWidth;
+      objectCanvas.height = originalImage.naturalHeight;
+      
+      // Initialize Offscreen Manual Mask Canvas
+      brushMaskCanvas = document.createElement('canvas');
+      brushMaskCanvas.width = originalImage.naturalWidth;
+      brushMaskCanvas.height = originalImage.naturalHeight;
+      brushMaskCtx = brushMaskCanvas.getContext('2d');
+      brushMaskCtx.clearRect(0, 0, brushMaskCanvas.width, brushMaskCanvas.height);
+      
+      // Set to default SAM mode
+      document.getElementById('mode-tabs').style.display = 'inline-flex';
+      setEditorMode('sam');
+      
+      redrawCanvas();
+      
+      document.getElementById('drop-zone').style.display = 'none';
+      document.getElementById('editor-container').style.display = 'block';
+    };
+    originalImage.src = e.target.result;
+    
+    generatedMaskB64 = null;
+    samBusy = false;
+    document.getElementById('inpaint-btn').disabled = true;
+    document.getElementById('result-card').style.display = 'none';
+    hideAlert('editor-alert');
+  };
+  reader.readAsDataURL(f);
+}
+
+// SAM one-click: immediately calls the SAM endpoint on the clicked coordinate
+async function handleSAMClick(e) {
+  if (!originalImage || samBusy) return;
+  
+  const key = document.getElementById('object-api-key').value.trim();
+  if (!key) { showAlert('editor-alert', 'error', 'Please enter your API key first.'); return; }
+  
+  const coords = getCanvasCoords(e);
+  const origX = Math.round(coords.canvasX * (originalImage.naturalWidth / objectCanvas.width));
+  const origY = Math.round(coords.canvasY * (originalImage.naturalHeight / objectCanvas.height));
+  
+  samBusy = true;
+  setSpinner('sam-spinner', true);
+  document.getElementById('sam-hint-text').textContent = 'Segmenting…';
+  hideAlert('editor-alert');
+  
+  const form = new FormData();
+  form.append('image', originalImageFile);
+  form.append('points', JSON.stringify([{ x: origX, y: origY }]));
+  
+  try {
+    const res = await fetch('/api/object-remover/sam', {
+      method: 'POST',
+      headers: { 'X-API-Key': key },
+      body: form
+    });
+    const data = await res.json();
+    if (res.ok) {
+      generatedMaskB64 = data.mask;
+      redrawCanvas();
+      document.getElementById('inpaint-btn').disabled = false;
+      document.getElementById('sam-hint-text').textContent = 'Object detected! Click elsewhere to re-detect, or press Remove Object.';
+      showAlert('editor-alert', 'success', 'Object detected! Press "Remove Object" to erase it, or click again to re-detect.');
+    } else {
+      showAlert('editor-alert', 'error', data.detail || 'SAM segmentation failed.');
+      document.getElementById('sam-hint-text').textContent = 'Click on an object to auto-detect it';
+    }
+  } catch(err) {
+    showAlert('editor-alert', 'error', 'Connection error: ' + err.message);
+    document.getElementById('sam-hint-text').textContent = 'Click on an object to auto-detect it';
+  }
+  
+  setSpinner('sam-spinner', false);
+  samBusy = false;
+}
+
+let lastX = 0;
+let lastY = 0;
+
+function handleMouseDown(e) {
+  if (!originalImage) return;
+  
+  if (editorMode === 'sam') {
+    handleSAMClick(e);
+    return;
+  }
+  
+  isDrawing = true;
+  const coords = getCanvasCoords(e);
+  lastX = coords.canvasX;
+  lastY = coords.canvasY;
+  
+  // Paint opening dot
+  brushMaskCtx.beginPath();
+  brushMaskCtx.arc(lastX, lastY, brushSize / 2, 0, 2 * Math.PI);
+  brushMaskCtx.fillStyle = '#ffffff';
+  brushMaskCtx.fill();
+  
+  redrawCanvas();
+}
+
+function handleMouseMove(e) {
+  if (!originalImage) return;
+  
+  const coords = getCanvasCoords(e);
+  cursorX = coords.canvasX;
+  cursorY = coords.canvasY;
+  
+  if (editorMode === 'brush' && isDrawing) {
+    brushMaskCtx.beginPath();
+    brushMaskCtx.moveTo(lastX, lastY);
+    brushMaskCtx.lineTo(cursorX, cursorY);
+    brushMaskCtx.strokeStyle = '#ffffff';
+    brushMaskCtx.lineWidth = brushSize;
+    brushMaskCtx.lineCap = 'round';
+    brushMaskCtx.lineJoin = 'round';
+    brushMaskCtx.stroke();
+    
+    lastX = cursorX;
+    lastY = cursorY;
+  }
+  
+  redrawCanvas();
+}
+
+function handleMouseUp(e) {
+  if (editorMode === 'brush' && isDrawing) {
+    isDrawing = false;
+    exportBrushMask();
+  }
+}
+
+// Touch event overrides for drawing
+function handleTouchStart(e) {
+  if (!originalImage) return;
+  if (editorMode === 'brush') {
+    e.preventDefault();
+    handleMouseDown(e);
+  } else {
+    // SAM mode: single tap → segment
+    handleSAMClick(e);
+  }
+}
+
+function handleTouchMove(e) {
+  if (!originalImage) return;
+  if (editorMode === 'brush') {
+    e.preventDefault();
+    handleMouseMove(e);
+  }
+}
+
+function handleTouchEnd(e) {
+  if (editorMode === 'brush') {
+    handleMouseUp(e);
+  }
+}
+
+function updateBrushSize(val) {
+  brushSize = parseInt(val);
+  document.getElementById('brush-size-val').textContent = val + 'px';
+  redrawCanvas();
+}
+
+function clearBrush() {
+  if (brushMaskCtx) {
+    brushMaskCtx.clearRect(0, 0, brushMaskCanvas.width, brushMaskCanvas.height);
+  }
+  generatedMaskB64 = null;
+  document.getElementById('inpaint-btn').disabled = true;
+  redrawCanvas();
+  hideAlert('editor-alert');
+}
+
+function exportBrushMask() {
+  if (!brushMaskCanvas) return;
+  
+  // Render B&W output image (black background, white mask)
+  const exportCanvas = document.createElement('canvas');
+  exportCanvas.width = brushMaskCanvas.width;
+  exportCanvas.height = brushMaskCanvas.height;
+  const exportCtx = exportCanvas.getContext('2d');
+  
+  exportCtx.fillStyle = '#000000';
+  exportCtx.fillRect(0, 0, exportCanvas.width, exportCanvas.height);
+  exportCtx.drawImage(brushMaskCanvas, 0, 0);
+  
+  generatedMaskB64 = exportCanvas.toDataURL('image/png').split(',')[1];
+  document.getElementById('inpaint-btn').disabled = false;
+}
+
+function setEditorMode(mode) {
+  editorMode = mode;
+  
+  // Highlight active tabs
+  const tabs = document.querySelectorAll('#mode-tabs button');
+  tabs.forEach(t => {
+    if (t.getAttribute('onclick').includes(mode)) {
+      t.classList.add('active');
+    } else {
+      t.classList.remove('active');
+    }
+  });
+  
+  // Toggle UI action panels
+  if (mode === 'sam') {
+    document.getElementById('sam-buttons').style.display = 'inline-flex';
+    document.getElementById('brush-buttons').style.display = 'none';
+    clearBrush();
+    objectCanvas.style.cursor = 'pointer';
+  } else {
+    document.getElementById('sam-buttons').style.display = 'none';
+    document.getElementById('brush-buttons').style.display = 'inline-flex';
+    clearSamMask();
+    objectCanvas.style.cursor = 'crosshair';
+  }
+  
+  redrawCanvas();
+}
+
+function redrawCanvas() {
+  if (!originalImage) return;
+  
+  objectCtx.clearRect(0, 0, objectCanvas.width, objectCanvas.height);
+  objectCtx.drawImage(originalImage, 0, 0, objectCanvas.width, objectCanvas.height);
+  
+  if (editorMode === 'sam') {
+    if (generatedMaskB64) {
+      const maskImg = new Image();
+      maskImg.onload = function() {
+        objectCtx.save();
+        objectCtx.globalAlpha = 0.55;
+        
+        const offscreen = document.createElement('canvas');
+        offscreen.width = objectCanvas.width;
+        offscreen.height = objectCanvas.height;
+        const offCtx = offscreen.getContext('2d');
+        offCtx.drawImage(maskImg, 0, 0, offscreen.width, offscreen.height);
+        
+        const imgData = offCtx.getImageData(0, 0, offscreen.width, offscreen.height);
+        const data = imgData.data;
+        for (let i = 0; i < data.length; i += 4) {
+          if (data[i] > 127) {
+            data[i] = 108;     // R
+            data[i+1] = 99;    // G
+            data[i+2] = 255;   // B
+            data[i+3] = 255;   // A
+          } else {
+            data[i+3] = 0;
+          }
+        }
+        offCtx.putImageData(imgData, 0, 0);
+        objectCtx.drawImage(offscreen, 0, 0);
+        objectCtx.restore();
+        drawPoints();
+      };
+      maskImg.src = "data:image/png;base64," + generatedMaskB64;
+    } else {
+      // no mask yet — plain image
+    }
+  } else if (editorMode === 'brush' && brushMaskCanvas) {
+    // Dynamic premium overlay using native canvas composite composition (0-overhead performance)
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = objectCanvas.width;
+    tempCanvas.height = objectCanvas.height;
+    const tempCtx = tempCanvas.getContext('2d');
+    
+    tempCtx.drawImage(brushMaskCanvas, 0, 0);
+    tempCtx.globalCompositeOperation = 'source-in';
+    tempCtx.fillStyle = '#6c63ff';
+    tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+    
+    objectCtx.save();
+    objectCtx.globalAlpha = 0.55;
+    objectCtx.drawImage(tempCanvas, 0, 0);
+    objectCtx.restore();
+    
+    // Draw brush outline circle preview
+    if (cursorX >= 0 && cursorY >= 0) {
+      objectCtx.save();
+      objectCtx.beginPath();
+      objectCtx.arc(cursorX, cursorY, brushSize / 2, 0, 2 * Math.PI);
+      objectCtx.strokeStyle = '#ffffff';
+      objectCtx.lineWidth = 2;
+      objectCtx.shadowColor = 'rgba(0,0,0,0.8)';
+      objectCtx.shadowBlur = 4;
+      objectCtx.stroke();
+      objectCtx.restore();
+    }
+  }
+}
+
+function clearSamMask() {
+  generatedMaskB64 = null;
+  samBusy = false;
+  document.getElementById('inpaint-btn').disabled = true;
+  document.getElementById('sam-hint-text').textContent = 'Click on an object to auto-detect it';
+  redrawCanvas();
+  hideAlert('editor-alert');
+}
+
+function resetEditor() {
+  originalImageFile = null;
+  originalImage = null;
+  generatedMaskB64 = null;
+  samBusy = false;
+  document.getElementById('file-input').value = '';
+  document.getElementById('drop-zone').style.display = 'block';
+  document.getElementById('editor-container').style.display = 'none';
+  document.getElementById('result-card').style.display = 'none';
+  hideAlert('editor-alert');
+  document.getElementById('mode-tabs').style.display = 'none';
+  brushMaskCanvas = null;
+  brushMaskCtx = null;
+}
+
+function updateParamVal(id, val) {
+  document.getElementById('val-' + id).textContent = val;
+}
+
+// generateMask() removed — SAM is now one-click via handleSAMClick()
+
+async function removeObject() {
+  const key = document.getElementById('object-api-key').value.trim();
+  if (!key) { showAlert('editor-alert', 'error', 'Please enter your API key.'); return; }
+  if (!originalImageFile) { showAlert('editor-alert', 'error', 'Please upload an image first.'); return; }
+  if (!generatedMaskB64) { showAlert('editor-alert', 'error', 'Please generate a segment mask first.'); return; }
+  
+  setSpinner('inpaint-spinner', true);
+  document.getElementById('inpaint-btn').disabled = true;
+  showAlert('editor-alert', 'info', 'Removing object using LaMa. This takes a few seconds…');
+  
+  try {
+    const maskBlob = base64ToBlob(generatedMaskB64, 'image/png');
+    
+    const form = new FormData();
+    form.append('image', originalImageFile);
+    form.append('mask', maskBlob, 'mask.png');
+    
+    // Sliders & settings
+    form.append('maskExpand', document.getElementById('param-mask-expand').value);
+    form.append('ldmSteps', document.getElementById('param-ldm-steps').value);
+    form.append('hdStrategy', document.getElementById('param-hd-strategy').value);
+    
+    const res = await fetch('/api/object-remover/inpaint-file', {
+      method: 'POST',
+      headers: { 'X-API-Key': key },
+      body: form
+    });
+    
+    const data = await res.json();
+    if (res.ok) {
+      // Load source base64 for before/after comparison
+      const beforeReader = new FileReader();
+      beforeReader.onload = e => { document.getElementById('result-before').src = e.target.result; };
+      beforeReader.readAsDataURL(originalImageFile);
+      
+      document.getElementById('result-after').src = data.result_url;
+      document.getElementById('download-btn').href = data.result_url;
+      document.getElementById('download-btn').download = data.filename;
+      
+      document.getElementById('result-card').style.display = 'block';
+      document.getElementById('result-card').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      showAlert('editor-alert', 'success', 'Object removed successfully!');
+    } else {
+      showAlert('editor-alert', 'error', data.detail || 'Inpainting failed.');
+    }
+  } catch(e) {
+    showAlert('editor-alert', 'error', 'Connection error: ' + e.message);
+  }
+  
+  setSpinner('inpaint-spinner', false);
+  document.getElementById('inpaint-btn').disabled = false;
+}
+
+function base64ToBlob(base64, mimeType = 'image/png') {
+  const byteCharacters = atob(base64);
+  const byteNumbers = new Array(byteCharacters.length);
+  for (let i = 0; i < byteCharacters.length; i++) {
+    byteNumbers[i] = byteCharacters.charCodeAt(i);
+  }
+  const byteArray = new Uint8Array(byteNumbers);
+  return new Blob([byteArray], { type: mimeType });
+}
+
+function saveApiKey() {
+  const key = document.getElementById('object-api-key').value.trim();
+  localStorage.setItem('object_remover_api_key', key);
+}
+
+function loadApiKey() {
+  const key = localStorage.getItem('object_remover_api_key') || '';
+  const input = document.getElementById('object-api-key');
+  if (input) {
+    input.value = key;
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+//  AUTHORIZATION PANEL
+// ═══════════════════════════════════════════════════════
+async function generateKey() {
+  const appName = document.getElementById('gen-app-name').value.trim();
+  const secretKey = document.getElementById('gen-secret-key').value.trim();
+  if (!appName) { showAlert('gen-alert', 'error', 'App name is required.'); return; }
+
+  setSpinner('gen-spinner', true);
+  try {
+    const body = { app_name: appName };
+    if (secretKey) body.secret_key = secretKey;
+    const res = await fetch('/api/auth/generate-key', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Admin-Key': adminKey },
+      body: JSON.stringify(body)
+    });
+    const data = await res.json();
+    if (res.ok) {
+      document.getElementById('gen-key-value').textContent = data.data.api_key;
+      document.getElementById('gen-result').style.display = 'block';
+      showAlert('gen-alert', 'success', `Key generated for "${appName}".`);
+      document.getElementById('gen-app-name').value = '';
+      document.getElementById('gen-secret-key').value = '';
+      loadKeys();
+    } else {
+      showAlert('gen-alert', 'error', data.detail || 'Failed to generate key.');
+    }
+  } catch(e) {
+    showAlert('gen-alert', 'error', 'Connection error: ' + e.message);
+  }
+  setSpinner('gen-spinner', false);
+}
+
+async function revokeKey() {
+  const key = document.getElementById('manage-key-input').value.trim();
+  if (!key) { showAlert('manage-alert', 'error', 'Please enter an API key.'); return; }
+  setSpinner('revoke-spinner', true);
+  try {
+    const res = await fetch(`/api/auth/revoke-key?api_key=${encodeURIComponent(key)}`, {
+      method: 'DELETE', headers: { 'X-Admin-Key': adminKey }
+    });
+    const data = await res.json();
+    if (res.ok) { showAlert('manage-alert', 'success', data.message); loadKeys(); }
+    else showAlert('manage-alert', 'error', data.detail || 'Failed.');
+  } catch(e) { showAlert('manage-alert', 'error', e.message); }
+  setSpinner('revoke-spinner', false);
+}
+
+async function restoreKey() {
+  const key = document.getElementById('manage-key-input').value.trim();
+  if (!key) { showAlert('manage-alert', 'error', 'Please enter an API key.'); return; }
+  setSpinner('restore-spinner', true);
+  try {
+    const res = await fetch(`/api/auth/restore-key?api_key=${encodeURIComponent(key)}`, {
+      method: 'PATCH', headers: { 'X-Admin-Key': adminKey }
+    });
+    const data = await res.json();
+    if (res.ok) { showAlert('manage-alert', 'success', data.message); loadKeys(); }
+    else showAlert('manage-alert', 'error', data.detail || 'Failed.');
+  } catch(e) { showAlert('manage-alert', 'error', e.message); }
+  setSpinner('restore-spinner', false);
+}
+
+async function loadKeys() {
+  try {
+    const res = await fetch('/api/auth/keys', { headers: { 'X-Admin-Key': adminKey } });
+    const data = await res.json();
+    if (!res.ok) { showAlert('keys-alert', 'error', data.detail || 'Failed to load keys.'); return; }
+    const tbody = document.getElementById('keys-tbody');
+    if (!data.data.length) {
+      tbody.innerHTML = '<tr><td colspan="4" style="color:var(--muted);text-align:center;padding:24px;">No keys found</td></tr>';
+      return;
+    }
+    tbody.innerHTML = data.data.map(k => `
+      <tr>
+        <td>${k.app_name}</td>
+        <td><code style="font-size:0.8rem;color:var(--accent2);">${k.api_key}</code></td>
+        <td><span class="badge ${k.is_active ? 'badge-green' : 'badge-red'}">${k.is_active ? 'Active' : 'Revoked'}</span></td>
+        <td style="color:var(--muted);">${formatDate(k.created_at)}</td>
+      </tr>`).join('');
+  } catch(e) { showAlert('keys-alert', 'error', e.message); }
+}
+
+// ═══════════════════════════════════════════════════════
+//  ANALYTICS PANEL
+// ═══════════════════════════════════════════════════════
+async function loadFiltersMeta() {
+  try {
+    const res = await fetch('/api/analytics/filters-meta');
+    const data = await res.json();
+    if (!res.ok) return;
+
+    const appList = document.getElementById('list-apps');
+    appList.innerHTML = data.app_names
+      .map(n => `<option value="${n}">`)
+      .join('');
+
+    const statusList = document.getElementById('list-status');
+    statusList.innerHTML = data.status_codes
+      .map(s => `<option value="${s}">`)
+      .join('');
+  } catch(e) {}
+}
+
+async function loadSummary() {
+  try {
+    const app = document.getElementById('f-app').value.trim();
+    const params = new URLSearchParams();
+    if (app) params.set('app_name', app);
+    const res = await fetch('/api/analytics/summary?' + params);
+    const data = await res.json();
+    if (res.ok) {
+      const d = data.data;
+      document.getElementById('stat-total').textContent = d.total_requests.toLocaleString();
+      document.getElementById('stat-bw').textContent = formatBytes(d.total_bandwidth);
+      document.getElementById('stat-rt').textContent = d.average_response_time_ms ? d.average_response_time_ms.toFixed(1) + ' ms' : '—';
+    }
+    const ipRes = await fetch('/api/analytics/ip-stats?' + params);
+    const ipData = await ipRes.json();
+    if (ipRes.ok) document.getElementById('stat-ips').textContent = ipData.data.total_unique_ips;
+  } catch(e) {}
+}
+
+async function loadAnalytics() {
+  setSpinner('analytics-spinner', true);
+  hideAnalyticsErrorDetail();
+  const params = buildParams();
+  params.set('skip', currentPage * PAGE_LIMIT);
+  params.set('limit', PAGE_LIMIT);
+  try {
+    const res = await fetch('/api/analytics/?' + params);
+    const data = await res.json();
+    if (!res.ok) { showAlert('analytics-alert', 'error', data.detail || 'Failed.'); return; }
+    currentAnalyticsRecords = data.data || [];
+    document.getElementById('analytics-total-badge').textContent = data.total + ' records';
+    document.getElementById('page-info').textContent = `Page ${currentPage + 1}`;
+    document.getElementById('prev-btn').disabled = currentPage === 0;
+    document.getElementById('next-btn').disabled = (currentPage + 1) * PAGE_LIMIT >= data.total;
+
+    const tbody = document.getElementById('analytics-tbody');
+    if (!data.data.length) {
+      currentAnalyticsRecords = [];
+      tbody.innerHTML = '<tr><td colspan="8" style="color:var(--muted);text-align:center;padding:24px;">No records found</td></tr>';
+      loadSummary();
+      return;
+    }
+    tbody.innerHTML = data.data.map((r, idx) => `
+      <tr>
+        <td style="color:var(--muted);white-space:nowrap;font-size:0.75rem;">${formatDate(r.timestamp)}</td>
+        <td>${r.app_name ? `<span class="badge badge-blue">${r.app_name}</span>` : '<span style="color:var(--muted)">—</span>'}</td>
+        <td><span class="badge badge-blue">${r.method}</span></td>
+        <td style="font-size:0.75rem;color:var(--muted);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r.path}</td>
+        <td><span class="badge ${r.status_code < 400 ? 'badge-green' : 'badge-red'}">${r.status_code}</span></td>
+        <td style="font-size:0.78rem;">${r.response_time_ms ? r.response_time_ms + ' ms' : '—'}</td>
+        <td style="font-size:0.78rem;">${formatBytes(r.total_bandwidth)}</td>
+      </tr>`.replace(
+        '<tr>',
+        `<tr class="${r.status_code >= 400 ? 'row-clickable' : ''}" ${r.status_code >= 400 ? `onclick="showAnalyticsRecord(${idx})"` : ''}>`
+      )
+    ).join('');
+    loadSummary();
+  } catch(e) { showAlert('analytics-alert', 'error', e.message); }
+  finally {
+    setSpinner('analytics-spinner', false);
+  }
+}
+
+function showAnalyticsRecord(idx) {
+  const record = currentAnalyticsRecords[idx];
+  if (!record || record.status_code < 400) return;
+  const detail = record.error_reason || 'No error reason was captured for this request.';
+  const safeDetail = escapeHtml(String(detail));
+  const header = `${record.method || '—'} ${record.path || '—'} (${record.status_code || '—'})`;
+  const panel = document.getElementById('analytics-error-detail');
+  panel.innerHTML = `<strong>Error Detail:</strong> ${escapeHtml(header)}<br>${safeDetail}`;
+  panel.style.display = 'block';
+}
+
+function hideAnalyticsErrorDetail() {
+  const panel = document.getElementById('analytics-error-detail');
+  panel.style.display = 'none';
+  panel.textContent = '';
+}
+
+function buildParams() {
+  const p = new URLSearchParams();
+  const app = document.getElementById('f-app').value.trim();
+  const method = document.getElementById('f-method').value;
+  const status = document.getElementById('f-status').value.trim();
+  const start = document.getElementById('f-start').value.trim();
+  const end = document.getElementById('f-end').value.trim();
+  if (app) p.set('app_name', app);
+  if (method) p.set('method', method);
+  if (status) p.set('status_code', status);
+  if (start) p.set('start_date', start);
+  if (end) p.set('end_date', end);
+  return p;
+}
+
+function changePage(dir) {
+  currentPage = Math.max(0, currentPage + dir);
+  loadAnalytics();
+}
+
+async function cleanupAnalytics() {
+  const days = document.getElementById('cleanup-days').value.trim() || '90';
+  if (!confirm(`Delete all analytics records older than ${days} days?`)) return;
+  setSpinner('cleanup-spinner', true);
+  try {
+    const res = await fetch(`/api/analytics/cleanup?days=${days}`, { method: 'DELETE' });
+    const data = await res.json();
+    if (res.ok) {
+      showAlert('cleanup-alert', 'success', data.message);
+      loadAnalytics();
+      loadSummary();
+    }
+    else showAlert('cleanup-alert', 'error', data.detail || 'Failed.');
+  } catch(e) { showAlert('cleanup-alert', 'error', e.message); }
+  setSpinner('cleanup-spinner', false);
+}
+
+async function deleteByFilter() {
+  const app = document.getElementById('del-app').value.trim();
+  const method = document.getElementById('del-method').value;
+  const status = document.getElementById('del-status').value.trim();
+  const path = document.getElementById('del-path').value.trim();
+  const start = document.getElementById('del-start').value.trim();
+  const end = document.getElementById('del-end').value.trim();
+
+  if (!app && !method && !status && !path && !start && !end) {
+    showAlert('delete-filter-alert', 'error', 'Please provide at least one filter parameter.');
+    return;
+  }
+
+  let filters = [];
+  if (app) filters.push(`App: ${app}`);
+  if (method) filters.push(`Method: ${method}`);
+  if (status) filters.push(`Status: ${status}`);
+  if (path) filters.push(`Path: ${path}`);
+  if (start) filters.push(`From: ${start}`);
+  if (end) filters.push(`To: ${end}`);
+  
+  const confirmMsg = `Delete all records matching:\n${filters.join('\n')}\n\nThis action cannot be undone. Continue?`;
+  if (!confirm(confirmMsg)) return;
+
+  setSpinner('delete-filter-spinner', true);
+  try {
+    const params = new URLSearchParams();
+    if (app) params.set('app_name', app);
+    if (method) params.set('method', method);
+    if (status) params.set('status_code', status);
+    if (path) params.set('path', path);
+    if (start) params.set('start_date', start);
+    if (end) params.set('end_date', end);
+
+    const res = await fetch(`/api/analytics/delete-by-filter?${params}`, { method: 'DELETE' });
+    const data = await res.json();
+    if (res.ok) {
+      showAlert('delete-filter-alert', 'success', data.message);
+      document.getElementById('del-app').value = '';
+      document.getElementById('del-method').value = '';
+      document.getElementById('del-status').value = '';
+      document.getElementById('del-path').value = '';
+      document.getElementById('del-start').value = '';
+      document.getElementById('del-end').value = '';
+      loadAnalytics();
+      loadSummary();
+    }
+    else showAlert('delete-filter-alert', 'error', data.detail || 'Failed.');
+  } catch(e) { showAlert('delete-filter-alert', 'error', e.message); }
+  setSpinner('delete-filter-spinner', false);
+}
+
+async function deleteAllAnalytics() {
+  const confirm_text = document.getElementById('delete-all-confirm').value.trim();
+  if (confirm_text !== 'DELETE_ALL') {
+    showAlert('delete-all-alert', 'error', 'Please type "DELETE_ALL" to confirm.');
+    return;
+  }
+
+  if (!confirm('⚠️ WARNING: This will permanently delete ALL analytics records!\n\nThis action CANNOT be undone.\n\nAre you absolutely sure?')) {
+    return;
+  }
+
+  setSpinner('delete-all-spinner', true);
+  try {
+    const res = await fetch(`/api/analytics/delete-all?confirm=DELETE_ALL`, { method: 'DELETE' });
+    const data = await res.json();
+    if (res.ok) {
+      showAlert('delete-all-alert', 'success', data.message);
+      document.getElementById('delete-all-confirm').value = '';
+      loadAnalytics();
+      loadSummary();
+    }
+    else showAlert('delete-all-alert', 'error', data.detail || 'Failed.');
+  } catch(e) { showAlert('delete-all-alert', 'error', e.message); }
+  setSpinner('delete-all-spinner', false);
+}
+
+function resetFilters() {
+  document.getElementById('f-app').value = '';
+  document.getElementById('f-method').value = '';
+  document.getElementById('f-status').value = '';
+  document.getElementById('f-start').value = '';
+  document.getElementById('f-end').value = '';
+  currentPage = 0;
+  loadAnalytics();
+  loadCharts();
+}
+
+async function loadCharts() {
+  try {
+    const params = buildParams();
+    params.set('limit', '1000');
+    const res = await fetch('/api/analytics/?' + params);
+    const data = await res.json();
+    if (!res.ok || !data.data.length) return;
+
+    const byDate = {};
+    data.data.forEach(r => {
+      const date = r.timestamp.split('T')[0];
+      if (!byDate[date]) byDate[date] = { count: 0, bandwidth: 0 };
+      byDate[date].count++;
+      byDate[date].bandwidth += r.total_bandwidth;
+    });
+
+    const dates = Object.keys(byDate).sort();
+    const counts = dates.map(d => byDate[d].count);
+    const bandwidths = dates.map(d => (byDate[d].bandwidth / 1024).toFixed(1));
+
+    const ctxReq = document.getElementById('chart-requests').getContext('2d');
+    if (chartRequests) chartRequests.destroy();
+    chartRequests = new Chart(ctxReq, {
+      type: 'line',
+      data: {
+        labels: dates,
+        datasets: [{
+          label: 'Requests',
+          data: counts,
+          borderColor: '#6c63ff',
+          backgroundColor: '#6c63ff33',
+          tension: 0.3,
+          fill: true
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          y: { beginAtZero: true, ticks: { color: '#64748b' }, grid: { color: '#2e3250' } },
+          x: { ticks: { color: '#64748b' }, grid: { display: false } }
+        }
+      }
+    });
+
+    const ctxBw = document.getElementById('chart-bandwidth').getContext('2d');
+    if (chartBandwidth) chartBandwidth.destroy();
+    chartBandwidth = new Chart(ctxBw, {
+      type: 'line',
+      data: {
+        labels: dates,
+        datasets: [{
+          label: 'Bandwidth (KB)',
+          data: bandwidths,
+          borderColor: '#a78bfa',
+          backgroundColor: '#a78bfa33',
+          tension: 0.3,
+          fill: true
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          y: { beginAtZero: true, ticks: { color: '#64748b' }, grid: { color: '#2e3250' } },
+          x: { ticks: { color: '#64748b' }, grid: { display: false } }
+        }
+      }
+    });
+  } catch(e) {}
+}
+
+async function refreshAnalyticsList() {
+  setSpinner('analytics-refresh-spinner', true);
+  hideAlert('analytics-alert');
+  try {
+    await loadFiltersMeta();
+    await loadSummary();
+    await loadAnalytics();
+    await loadCharts();
+  } catch (e) {
+    showAlert('analytics-alert', 'error', e.message);
+  }
+  setSpinner('analytics-refresh-spinner', false);
+}
+
+// ═══════════════════════════════════════════════════════
+//  HELPERS
+// ═══════════════════════════════════════════════════════
+function showAlert(id, type, msg) {
+  const el = document.getElementById(id);
+  el.className = `alert alert-${type} show`;
+  el.textContent = msg;
+}
+function hideAlert(id) {
+  const el = document.getElementById(id);
+  el.className = 'alert';
+  el.textContent = '';
+}
+function setSpinner(id, show) {
+  document.getElementById(id).style.display = show ? 'inline-block' : 'none';
+}
+function copyText(id) {
+  const text = document.getElementById(id).textContent;
+  navigator.clipboard.writeText(text).then(() => alert('Copied!'));
+}
+function formatDate(iso) {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleString();
+}
+function formatBytes(b) {
+  if (!b) return '0 B';
+  const units = ['B','KB','MB','GB'];
+  let i = 0;
+  while (b >= 1024 && i < units.length - 1) { b /= 1024; i++; }
+  return b.toFixed(1) + ' ' + units[i];
+}
+function escapeHtml(value) {
+  return value
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
+}
+
+// ═══════════════════════════════════════════════════════
+//  ON LOAD INITIALIZATION
+// ═══════════════════════════════════════════════════════
+window.addEventListener('DOMContentLoaded', () => {
+  initCanvasReferences();
+  loadApiKey();
+  
+  const dz = document.getElementById('drop-zone');
+  const fi = document.getElementById('file-input');
+  
+  dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag-over'); });
+  dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
+  dz.addEventListener('drop', e => {
+    e.preventDefault(); dz.classList.remove('drag-over');
+    const f = e.dataTransfer.files[0];
+    if (f) setFile(f);
+  });
+  
+  fi.addEventListener('change', () => { if (fi.files[0]) setFile(fi.files[0]); });
+});
+</script>
+</body>
+</html>

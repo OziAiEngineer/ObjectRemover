@@ -1,0 +1,26 @@
+# Core Web API & Server
+fastapi==0.115.0
+uvicorn==0.30.6
+python-multipart==0.0.12
+python-dotenv==1.0.1
+
+# Database & Authorization / Analytics
+motor==3.6.0
+pymongo==4.9.1
+pydantic==2.9.2
+
+# Image Processing & Utilities
+numpy==1.26.4
+opencv-python==4.10.0.84
+Pillow==10.4.0
+pillow-heif==0.13.0
+scikit-image==0.24.0
+
+# Machine Learning & Object Remover (LaMa and SAM)
+torch==2.4.1
+torchvision==0.19.1
+iopaint==1.4.2
+diffusers==0.29.2
+transformers==4.45.1
+accelerate==0.34.2
+segment-anything==1.0

@@ -1,0 +1,14 @@
+﻿**/__pycache__/
+*.pyc
+BG_venv
+static/results/
+.env
+venv_bg_remover/
+.vscode/
+models/GFPGANv1.4.pth
+models/inswapper_128.onnx
+gfpgan/
+models/embeddings_h14
+models/plant_faiss_index.index
+models/bioclip_vith14
+

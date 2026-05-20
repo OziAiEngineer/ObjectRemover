@@ -1,0 +1,142 @@
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+
+def _get_bool_env(name: str, default: bool) -> bool:
+    raw = os.getenv(name)
+    if raw is None:
+        return default
+    return raw.strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _get_int_env(name: str, default: int, minimum: int = 1) -> int:
+    try:
+        value = int(os.getenv(name, str(default)))
+        return max(minimum, value)
+    except (TypeError, ValueError):
+        return default
+
+IP = "0.0.0.0"
+SYSTEM_IP="172.16.0.94"
+PORT = 8000
+
+#App Information
+TITLE = "Background Remover"
+DESCRIPTION = "Remove background from images using AI"
+VERSION = "1.0.0"
+AUTHOR = "Annas Asif"
+
+
+#Templates Path
+TEMPLATES_DIR = "templates"
+
+#Static Path
+STATIC_DIR = "static"
+
+#Database Information
+MONGODB_URL = "mongodb://localhost:27017"
+ANALYTICS_DATABASE = "analytics"
+AUTHORIZATION_DATABASE = "authorization"
+URDU_SHAYARI_DATABASE = os.getenv("URDU_SHAYARI_DATABASE", "Urdu_Shayari")
+
+SECRET_KEY = os.getenv("SECRET_KEY", "changeme")
+ADMIN_API_KEY = os.getenv("ADMIN_API_KEY")
+ANALYTICS_COLLECTION_NAME = "api_logs"
+AUTHORIZATION_COLLECTION_NAME = "api_keys"
+
+#Image Path and URL Prefix
+IMAGE_PATH = "static/results/"
+IMAGE_URL_PREFIX = f"http://{SYSTEM_IP}:{PORT}/static/"
+
+#InsightFace variables
+INSIGHTFACE_MODEL = "buffalo_l"
+INSIGHTFACE_MODEL_ROOT = f"C:/Users/muhammadannasasif/.insightface"
+# INSIGHTFACE_MODEL_ROOT = f"/root/.insightface"
+
+# --------------------------------------------------------------------------------------
+# Models / paths
+# --------------------------------------------------------------------------------------
+
+ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+
+# Face detection (InsightFace FaceAnalysis)
+DETECTION_MODEL_NAME = os.getenv("DETECTION_MODEL_NAME", INSIGHTFACE_MODEL)
+DETECTION_MODEL_ROOT = os.getenv("DETECTION_MODEL_ROOT", INSIGHTFACE_MODEL_ROOT)
+
+try:
+    DETECTION_MODEL_CTX_ID = int(os.getenv("DETECTION_MODEL_CTX_ID", "-1"))
+except ValueError:
+    DETECTION_MODEL_CTX_ID = -1
+
+# Face swapper (inswapper_128.onnx)
+MODEL_PATH = os.getenv(
+    "INSWAPPER_MODEL_PATH",
+    os.path.join(ROOT_DIR, "models", "inswapper_128.onnx"),
+)
+
+# GFPGAN weights
+# GFPGAN_V1_3_PATH is kept for compatibility, but v1.3 is currently not used.
+GFPGAN_V1_3_PATH = os.getenv(
+    "GFPGAN_V1_3_PATH",
+    os.path.join(ROOT_DIR, "models", "GFPGANv1.3.pth"),
+)
+GFPGAN_V1_4_PATH = os.getenv(
+    "GFPGAN_V1_4_PATH",
+    os.path.join(ROOT_DIR, "models", "GFPGANv1.4.pth"),
+)
+
+# BioCLIP weights
+BIOCLIP_PATH = os.getenv(
+    "BIOCLIP_PATH",
+    os.path.join(ROOT_DIR, "models", "bioclip_vith14"),
+)
+
+# Models to use (Face Swap)
+INSWAPPER_ENABLE = True
+# GFPGAN1_3_ENABLE = True  # optional
+GFPGAN1_3_ENABLE = _get_bool_env("GFPGAN1_3_ENABLE", False)
+GFPGAN1_4_ENABLE = _get_bool_env("GFPGAN1_4_ENABLE", True)
+
+# Models to use (Face Swap)
+INSWAPPER_ENABLE = True
+# GFPGAN1_3_ENABLE = True  # optional
+GFPGAN1_3_ENABLE = False
+GFPGAN1_4_ENABLE = True
+BIOCLIP_ENABLE = True
+FAISS_ENABLE = True
+
+# FAISS Index Path
+FAISS_INDEX_PATH = os.path.join(ROOT_DIR, "models", "plant_faiss_index.index")
+
+# Plant Metadata Path
+PLANT_METADATA_PATH = os.path.join(ROOT_DIR, "models", "embeddings_h14", "metadata.json")
+
+# ── Object Remover feature flags ──────────────────────────────────────────────
+ 
+# Set LAMA_ENABLE=true in .env to load the LaMa inpainting model at startup
+LAMA_ENABLE: bool = os.getenv("LAMA_ENABLE", "false").lower() == "true"
+ 
+# Set SAM_ENABLE=true in .env to load the SAM segmentation model at startup
+SAM_ENABLE: bool = os.getenv("SAM_ENABLE", "false").lower() == "true"
+ 
+# SAM model variant — "sam2_1_tiny" is the lightest, "sam2_1_base" is heavier
+SAM_MODEL_TYPE: str = os.getenv("SAM_MODEL_TYPE", "sam2_1_tiny")
+ 
+# Results directory for inpainted images (inside your existing static folder)
+# e.g.  static/results/object_remover/
+OBJECT_REMOVER_RESULTS_DIR: str = os.getenv(
+    "OBJECT_REMOVER_RESULTS_DIR",
+    "static/results/object_remover",
+)
+ 
+# URL prefix used to build public image URLs returned in API responses
+# Should match whatever prefix your static mount uses, e.g. /static/results/object_remover
+OBJECT_REMOVER_URL_PREFIX: str = os.getenv(
+    "OBJECT_REMOVER_URL_PREFIX",
+    "/static/results/object_remover",
+)
+
+
+
