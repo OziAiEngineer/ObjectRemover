@@ -16,6 +16,9 @@ Pillow==10.4.0
 pillow-heif==0.13.0
 scikit-image==0.24.0
 
+# Model Downloader
+gdown==5.2.0
+
 # Machine Learning & Object Remover (LaMa and SAM)
 torch==2.4.1
 torchvision==0.19.1
